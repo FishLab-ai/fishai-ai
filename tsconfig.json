@@ -5,9 +5,18 @@
     "moduleResolution": "bundler",
     "esModuleInterop": true,
     "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "noErrorTruncation": true,
     "outDir": "dist",
     "rootDir": "src",
     "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
     "skipLibCheck": true
   },
   "include": ["src"]

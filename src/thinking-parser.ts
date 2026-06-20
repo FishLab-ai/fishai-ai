@@ -9,6 +9,13 @@ export interface ParseEvent {
   content: string;
 }
 
+interface TagPair {
+  openIdx: number;
+  openTagLen: number;
+  closeIdx: number;
+  closeTagLen: number;
+}
+
 export class ThinkingParser {
   private thinkingDone = false;
   private lastSentThinkingLen = 0;
@@ -18,49 +25,27 @@ export class ThinkingParser {
    * 流式解析：每次传入新的 chunk，返回分离后的事件
    */
   parse(fullContent: string, chunk: string, deepThinking: boolean): ParseEvent[] {
-    const events: ParseEvent[] = [];
-
     // 非深度思考模式：直接透传
     if (!deepThinking) {
-      if (chunk) events.push({ type: 'content', content: chunk });
-      return events;
+      if (chunk.length > 0) {
+        return [{ type: 'content', content: chunk }];
+      }
+      return [];
     }
 
     // 思考已结束：直接透传后续内容
     if (this.thinkingDone) {
-      if (chunk) events.push({ type: 'content', content: chunk });
-      return events;
+      if (chunk.length > 0) {
+        return [{ type: 'content', content: chunk }];
+      }
+      return [];
     }
 
-    const openIdx = fullContent.indexOf('<thinkthink>');
-    const openIdxAlt = fullContent.indexOf('<LMTHINK>');
-    const effectiveOpenIdx = openIdx !== -1 ? openIdx : openIdxAlt;
-    const openTagLen =
-      openIdx !== -1
-        ? '<thinkthink>'.length
-        : openIdxAlt !== -1
-          ? '<LMTHINK>'.length
-          : 0;
-
-    const closeIdx = fullContent.indexOf('</thinkthink>');
-    const closeIdxAlt = fullContent.indexOf('</LMTHINK>');
-    const effectiveCloseIdx = closeIdx !== -1 ? closeIdx : closeIdxAlt;
-    const closeTagLen =
-      closeIdx !== -1
-        ? '</thinkthink>'.length
-        : closeIdxAlt !== -1
-          ? '</LMTHINK>'.length
-          : 0;
+    const tags = this.findTagPair(fullContent);
 
     // 还没出现开标签 —— 检测是否是不完整的标签片段
-    if (effectiveOpenIdx === -1) {
-      if (this.couldBePartialTag(fullContent)) {
-        this.bufferedContent = fullContent;
-        return events;
-      }
-      this.bufferedContent = '';
-      if (chunk) events.push({ type: 'content', content: chunk });
-      return events;
+    if (tags.openIdx === -1) {
+      return this.handleNoOpenTag(fullContent, chunk);
     }
 
     // 清除之前的 buffer
@@ -69,30 +54,23 @@ export class ThinkingParser {
     }
 
     // 开标签已出现但闭标签还没出现 —— 流式输出思考内容
-    if (effectiveCloseIdx === -1) {
-      const thinkContent = fullContent.slice(effectiveOpenIdx + openTagLen);
-      if (thinkContent.length > this.lastSentThinkingLen) {
-        const newPart = thinkContent.slice(this.lastSentThinkingLen);
-        this.lastSentThinkingLen = thinkContent.length;
-        events.push({ type: 'thinking', content: newPart });
-      }
-      return events;
+    if (tags.closeIdx === -1) {
+      return this.handleStreamingThinking(fullContent, tags.openIdx, tags.openTagLen);
     }
 
     // 闭标签出现了 —— 最终状态
     this.thinkingDone = true;
 
-    const thinkContent = fullContent.slice(
-      effectiveOpenIdx + openTagLen,
-      effectiveCloseIdx
-    );
+    const events: ParseEvent[] = [];
+
+    const thinkContent = fullContent.slice(tags.openIdx + tags.openTagLen, tags.closeIdx);
     if (thinkContent.length > this.lastSentThinkingLen) {
       const newPart = thinkContent.slice(this.lastSentThinkingLen);
       this.lastSentThinkingLen = thinkContent.length;
       events.push({ type: 'thinking', content: newPart });
     }
 
-    const afterThink = fullContent.slice(effectiveCloseIdx + closeTagLen);
+    const afterThink = fullContent.slice(tags.closeIdx + tags.closeTagLen);
     if (afterThink.length > 0) {
       events.push({ type: 'content', content: afterThink });
     }
@@ -148,11 +126,68 @@ export class ThinkingParser {
     this.bufferedContent = '';
   }
 
+  private findTagPair(content: string): TagPair {
+    const openIdx = content.indexOf('<thinkthink>');
+    const openIdxAlt = content.indexOf('<LMTHINK>');
+    const effectiveOpenIdx = openIdx !== -1 ? openIdx : openIdxAlt;
+    const openTagLen = this.resolveTagLength(openIdx, openIdxAlt, '<thinkthink>', '<LMTHINK>');
+
+    const closeIdx = content.indexOf('</thinkthink>');
+    const closeIdxAlt = content.indexOf('</LMTHINK>');
+    const effectiveCloseIdx = closeIdx !== -1 ? closeIdx : closeIdxAlt;
+    const closeTagLen = this.resolveTagLength(closeIdx, closeIdxAlt, '</thinkthink>', '</LMTHINK>');
+
+    return { openIdx: effectiveOpenIdx, openTagLen, closeIdx: effectiveCloseIdx, closeTagLen };
+  }
+
+  private resolveTagLength(
+    primaryIdx: number,
+    altIdx: number,
+    primaryTag: string,
+    altTag: string
+  ): number {
+    if (primaryIdx !== -1) {
+      return primaryTag.length;
+    }
+    if (altIdx !== -1) {
+      return altTag.length;
+    }
+    return 0;
+  }
+
+  private handleNoOpenTag(fullContent: string, chunk: string): ParseEvent[] {
+    if (this.couldBePartialTag(fullContent)) {
+      this.bufferedContent = fullContent;
+      return [];
+    }
+    this.bufferedContent = '';
+    if (chunk.length > 0) {
+      return [{ type: 'content', content: chunk }];
+    }
+    return [];
+  }
+
+  private handleStreamingThinking(
+    fullContent: string,
+    openIdx: number,
+    openTagLen: number
+  ): ParseEvent[] {
+    const thinkContent = fullContent.slice(openIdx + openTagLen);
+    if (thinkContent.length > this.lastSentThinkingLen) {
+      const newPart = thinkContent.slice(this.lastSentThinkingLen);
+      this.lastSentThinkingLen = thinkContent.length;
+      return [{ type: 'thinking', content: newPart }];
+    }
+    return [];
+  }
+
   private couldBePartialTag(s: string): boolean {
     const tags = ['<thinkthink>', '</thinkthink>', '<LMTHINK>', '</LMTHINK>'];
     for (const tag of tags) {
       for (let len = 1; len <= tag.length; len++) {
-        if (s.endsWith(tag.slice(0, len))) return true;
+        if (s.endsWith(tag.slice(0, len))) {
+          return true;
+        }
       }
     }
     return false;

@@ -25,7 +25,7 @@ export class MemoryManager {
 
     while ((match = regex.exec(content)) !== null) {
       const action = match[1] as MemoryOp['action'];
-      const payload = match[2];
+      const payload = match[2] ?? '';
 
       if (action === 'update') {
         // [MEM:update|旧关键词|新内容]
@@ -41,10 +41,11 @@ export class MemoryManager {
         // active or persistent
         const parts = payload.split('|');
         const validCategories = ['personal', 'preference', 'knowledge', 'schedule', 'general'];
-        const hasCategory = validCategories.includes(parts[0]);
+        const [firstPart] = parts;
+        const hasCategory = parts.length > 0 && firstPart !== undefined && validCategories.includes(firstPart);
         ops.push({
           action,
-          category: hasCategory ? parts[0] : 'general',
+          category: hasCategory ? firstPart : 'general',
           content: hasCategory ? parts.slice(1).join('|') : payload,
         });
       }

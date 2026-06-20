@@ -67,7 +67,7 @@ export class ChatEngine {
       ...options.history.map((m) => ({ role: m.role, content: m.content })),
     ];
 
-    if (options.searchResults) {
+    if (options.searchResults !== undefined && options.searchResults.length > 0) {
       messages.push({
         role: 'user',
         content: `[联网搜索结果]\n${options.searchResults}\n\n[用户问题]\n${options.userMessage}`,

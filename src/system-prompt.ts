@@ -160,10 +160,10 @@ export class SystemPrompt {
     memoryMode?: 'aggressive' | 'balanced' | 'passive';
   }): string {
     let prompt = SystemPrompt.BASE;
-    if (options?.deepThinking) {
+    if (options?.deepThinking === true) {
       prompt += SystemPrompt.DEEP_THINKING_SUFFIX;
     }
-    prompt += SystemPrompt.MEMORY_MODE_PROMPTS[options?.memoryMode || 'balanced'];
+    prompt += SystemPrompt.MEMORY_MODE_PROMPTS[options?.memoryMode ?? 'balanced'];
     return prompt;
   }
 
