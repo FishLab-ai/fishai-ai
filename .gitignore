@@ -1,1 +1,4 @@
-node_modules/\ndist/\n*.js\n*.d.ts\n!src/\n
+node_modules/
+package-lock.json
+dist/
+*.tsbuildinfo
