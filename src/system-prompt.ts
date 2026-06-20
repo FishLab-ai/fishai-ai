@@ -174,6 +174,7 @@ export class SystemPrompt {
     basePrompt: string,
     memories: {
       active: Array<{ category: string; content: string }>;
+      notebook: Array<{ category: string; content: string }>;
       core: Array<{ category: string; content: string }>;
       recent: Array<{ category: string; content: string }>;
     }
@@ -182,7 +183,12 @@ export class SystemPrompt {
 
     if (memories.active.length > 0) {
       const text = memories.active.map((m) => `[${m.category}] ${m.content}`).join('\n');
-      prompt += `\n\n## 记事本（用户写的，所有对话可见）\n${text}`;
+      prompt += `\n\n## 记事本（用户标记的重要笔记，所有对话直接可见）\n${text}`;
+    }
+
+    if (memories.notebook.length > 0) {
+      const text = memories.notebook.map((m) => `[${m.category}] ${m.content}`).join('\n');
+      prompt += `\n\n## 记事本（用户存的普通笔记，需要时参考）\n${text}`;
     }
 
     if (memories.core.length > 0) {
