@@ -22,6 +22,7 @@ export interface PromptOptions {
   memoryMode?: 'aggressive' | 'balanced' | 'passive';
   memories?: {
     active: Array<{ category: string; content: string }>;
+    notebook: Array<{ category: string; content: string }>;
     core: Array<{ category: string; content: string }>;
     recent: Array<{ category: string; content: string }>;
   };
