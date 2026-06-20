@@ -1,17 +1,15 @@
 /**
  * FishAI AI Engine v0.1.0
- * FishLab-ai 自研 AI 引擎
+ * FishLab-ai 自研 AI 引擎 — 纯逻辑层
  *
- * 核心职责：
+ * 不依赖任何外部推理 SDK，只负责：
  * - 系统提示词管理
- * - 记忆系统（三层：上下文 / 持久 / 记事本）
+ * - 记忆系统（指令提取 / 内容清理）
  * - 深度思考解析器
- * - ZAI SDK 推理调度
- * - 流式响应处理
+ * - 聊天消息组装与后处理
  */
 
 export { SystemPrompt } from './system-prompt.js';
-export { MemoryManager, type Memory, type MemoryType } from './memory.js';
+export { MemoryManager } from './memory.js';
 export { ThinkingParser } from './thinking-parser.js';
-export { ChatEngine, type ChatOptions, type ChatStreamEvent } from './chat-engine.js';
-export { ZAIClient } from './zai-client.js';
+export { ChatEngine, type ChatMessage, type PromptOptions, type ResponseResult } from './chat-engine.js';
