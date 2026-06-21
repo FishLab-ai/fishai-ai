@@ -37,9 +37,9 @@ describe('SystemPrompt', () => {
 
     it('始终包含核心架构信息', () => {
       const prompt = SystemPrompt.build();
-      expect(prompt).toContain('RoPE');
+      expect(prompt).toContain('LLaMA-style');
       expect(prompt).toContain('MLA');
-      expect(prompt).toContain('YaRN');
+      expect(prompt).toContain('FlashAttention-2');
     });
   });
 
